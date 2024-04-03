@@ -1,0 +1,14 @@
+{
+    "Arista": {
+        "Tenant ID": "1",
+        "Timestamp": "2024-04-02T19:42:10.267161"
+    },
+    "Juniper": {
+        "Tenant ID": "2",
+        "Timestamp": "2024-04-02T19:42:16.445006"
+    },
+    "tenant_ids": [
+        "2",
+        "1"
+    ]
+}

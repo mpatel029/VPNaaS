@@ -1,0 +1,65 @@
+---
+- name: Create VM
+  hosts: localhost
+  become: true
+  vars_files:
+    - "all_vm_configs.yaml"
+  tasks:
+
+    - name: Create VM Configuration
+      file:
+        path: "/var/lib/libvirt/images/{{ item.vm_name }}"
+        state: directory
+      with_items: "{{ vm_configurations }}"
+
+    - name: Create VM disk image
+      command: qemu-img create -f qcow2 -F qcow2 -o backing_file=/var/lib/libvirt/images/jammy-server-cloudimg-amd64.img ./{{ item.vm_name }}/{{ item.vm_name }}.qcow2
+      args:
+        chdir: /var/lib/libvirt/images/
+      with_items: "{{ vm_configurations }}"
+
+    - name: Resize VM disk image
+      command: qemu-img resize "/var/lib/libvirt/images/{{ item.vm_name }}/{{ item.vm_name }}.qcow2" "{{ item.disk_size }}"
+      args:
+        chdir: /var/lib/libvirt/images/
+      with_items: "{{ vm_configurations }}"
+
+    - name: Create VM meta-data file
+      copy:
+        content: |
+          #cloud-config
+          instance-id: "{{ item.vm_name }}"
+          local-hostname: "{{ item.vm_name }}"
+        dest: "/var/lib/libvirt/images/{{ item.vm_name }}/meta-data"
+      with_items: "{{ vm_configurations }}"
+
+    - name: Create VM user-data file
+      copy:
+        content: |
+          #cloud-config
+          disable_root: false
+          ssh_authorized_keys:
+            - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCrEee12zkcNxv6+mVoTm5L7q0kUG3My52m/8/zOTPBAD3sMfIm1uoLeBgpykqqU9lA2PWGmqaJ3806TXvxftVwCUApPWXj8D500Zi9Ug0LPIiR2A062fGEgJH8MbLo2FvhHYF/NOubqMLtQWBTwGCHOfSOzBEppQPwg8TdaeM20kF3luMXffv9gnDdqqrSMgbzBXpnw8kcfeqHur76X0W+IGy5C71xCMj/pO4puCeLRLEJaQRHX/KlH17z6URLd2cTJkCCGO24JlAyC6JzavZNmSKfuN+rgoi1Nl9osA42hmocZ7g7IJLWPKRUxNdLfCE3iPbRpOhhMBvIzmKGZA0FZJxKL/CaxOR9acnrb1sYbJcZ2gOr2TmaW9ecLZ8vh4LtiyG6XlMEt0rj8SIqW3WIu0Ltjz2I5+u4aCPBtp9iZBTDAHm4vNQJIDHwIu78+MyrQqcmgjYYSU7UzAIxTwDuaiVOUAuqTlIMHRydKEPE+J5PxFhnMFGqgkRZPfhDY0U= vmadm@lnVM14
+          users:
+            - default
+            - name: root
+              lock_passwd: false
+              plain_text_passwd: "root"
+            - name: "{{ item.username }}"
+              lock_passwd: false
+              plain_text_passwd: "{{ item.password }}"
+        dest: "/var/lib/libvirt/images/{{ item.vm_name }}/user-data"
+      with_items: "{{ vm_configurations }}"
+
+    - name: Create VM ISO image
+      command: genisoimage -output "./{{ item.vm_name }}-cidata.iso" -volid cidata -joliet -rock meta-data user-data
+      args:
+        chdir: "/var/lib/libvirt/images/{{ item.vm_name }}"
+      with_items: "{{ vm_configurations }}"
+
+    - name: Install VM
+      command: >
+        virt-install --virt-type kvm --name "{{ item.vm_name }}" --ram "{{ item.memory }}" --vcpus="{{ item.vcpus }}" --os-variant ubuntu22.04 --disk path=/var/lib/libvirt/images/"{{ item.vm_name }}/{{ item.vm_name }}".qcow2,format=qcow2 --disk path=/var/lib/libvirt/images/"{{ item.vm_name }}/{{ item.vm_name }}"-cidata.iso,device=cdrom --import --network bridge=br0 --noautoconsole
+      register: virt_install_output
+      become: yes
+      with_items: "{{ vm_configurations }}"

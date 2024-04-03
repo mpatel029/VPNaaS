@@ -1,0 +1,71 @@
+---
+- name: Configure VMs
+  hosts: localhost
+  gather_facts: no
+  become: true
+  vars_files:
+    - "all_vm_configs.yaml"
+  tasks:
+        - name: Create namespace for VPC
+          command: sudo ip netns add "{{ item.vpc_id }}"
+          with_items: "{{ vm_configurations }}"
+          ignore_errors: yes
+
+        - name: Create veth pair
+          command: sudo ip link add "{{ item.veth_bridge }}" type veth peer name "{{ item.veth_namespace }}"
+          with_items: "{{ vm_configurations }}"
+          ignore_errors: yes
+
+        - name: Attach veth namespace interface to NS
+          command: sudo ip link set "{{ item.veth_namespace }}" netns "{{ item.vpc_id }}"
+          with_items: "{{ vm_configurations }}"
+          ignore_errors: yes
+
+        - name: Set veth bridge interface UP
+          command: sudo ip link set "{{ item.veth_bridge }}" up
+          with_items: "{{ vm_configurations }}"
+          ignore_errors: yes
+
+        - name: Attach veth bridge interface to bridge
+          command: sudo brctl addif "{{ item.bridge }}" "{{ item.veth_bridge }}"
+          with_items: "{{ vm_configurations }}"
+          ignore_errors: yes
+
+        - name: Set veth namespace and loopback interface UP
+          command: sudo ip netns exec "{{ item.vpc_id }}" ip link set "{{ item.veth_namespace }}" up
+          command: sudo ip netns exec "{{ item.vpc_id }}" ip link set lo up
+          with_items: "{{ vm_configurations }}"
+          ignore_errors: yes
+
+        - name: Add IP address for veth namespace interface
+          command: sudo ip netns exec "{{ item.vpc_id }}" ip addr add {{ item.subnet.split('.')[0] }}.{{ item.subnet.split('.')[1] }}.{{ item.subnet.split('.')[2] }}.2/24 dev "{{ item.veth_namespace }}"
+          with_items: "{{ vm_configurations }}"
+          ignore_errors: yes
+
+        - name: Write dnsmasq configuration file
+          command: sudo ip netns exec "{{ item.vpc_id }}" dnsmasq --interface="{{ item.veth_namespace }}" --except-interface=lo --bind-interfaces --dhcp-range="{{item.start_ip }}","{{ item.end_ip }}",24h
+          with_items: "{{ vm_configurations }}"
+          ignore_errors: yes
+
+        - name: Start dnsmasq in namespace
+          command: sudo ip netns exec "{{ item.vpc_id }}" systemctl start dnsmasq
+          with_items: "{{ vm_configurations }}"
+          ignore_errors: yes
+
+        - name: Connecting VPC namespace to Transit Gateway namespace
+          shell: |
+             sudo ip link add "{{ item.vpc_id }}_tr1" type veth peer name "{{ item.vpc_id  }}_tr2"
+             sudo ip link set "{{ item.vpc_id }}_tr2" netns TransitGateway
+             sudo ip link set "{{ item.vpc_id }}_tr1" netns "{{ item.vpc_id }}"
+             sudo ip netns exec "{{ item.vpc_id }}" ip addr add {{ item.veth_subnet.split('.')[0] }}.{{ item.veth_subnet.split('.')[1] }}.{{ item.veth_subnet.split('.')[2] }}.1/24 dev "{{ item.vpc_id }}_tr1"
+             sudo ip netns exec TransitGateway ip addr add {{ item.veth_subnet.split('.')[0] }}.{{ item.veth_subnet.split('.')[1] }}.{{ item.veth_subnet.split('.')[2] }}.2/24 dev "{{ item.vpc_id }}_tr2"
+             sudo ip netns exec TransitGateway ip link set "{{ item.vpc_id  }}_tr2" up
+             sudo ip netns exec "{{ item.vpc_id }}" ip link set "{{ item.vpc_id }}_tr1" up
+          with_items: "{{ vm_configurations }}"
+          ignore_errors: yes
+
+        - name: Establish connectivity to Internet for ALL NS
+          shell: |
+            sudo ip netns exec "{{ item.vpc_id }}" ip route add default via {{ item.veth_subnet.split('.')[0] }}.{{ item.veth_subnet.split('.')[1] }}.{{ item.veth_subnet.split('.')[2] }}.2 dev "{{ item.vpc_id }}_tr1"
+          with_items: "{{ vm_configurations }}"
+          ignore_errors: yes
