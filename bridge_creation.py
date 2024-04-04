@@ -12,7 +12,7 @@ def create_bridge(bridge_name):
 def attach_interface(vm_name, bridge_name):
     subprocess.run(["sudo", "virsh", "attach-interface", "--domain", vm_name, "--type", "bridge", "--source", bridge_name, "--model", "virtio"], check=True)
     subprocess.run(["sudo", "brctl", "stp", bridge_name, "yes"], check=True)
-    subprocess.run(["sudo", "ip", "link", "set", "up" ,bridge_name], check=True)
+    subprocess.run(["sudo", "ip", "link", "set", bridge_name, "up"], check=True)
 def main():
     with open("all_vm_configs.yaml", "r") as file:
         data = yaml.safe_load(file)

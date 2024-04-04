@@ -21,8 +21,10 @@
           with_items: "{{ vm_configurations }}"
           ignore_errors: yes
 
-        - name: Set veth bridge interface UP
-          command: sudo ip link set "{{ item.veth_bridge }}" up
+        - name: Set veth bridge interface and veth namespace interface UP
+          shell: |
+              sudo ip link set "{{ item.veth_bridge }}" up
+              sudo ip netns exec "{{ item.vpc_id }}" ip link set "{{ item.veth_namespace }}" up
           with_items: "{{ vm_configurations }}"
           ignore_errors: yes
 
@@ -31,8 +33,7 @@
           with_items: "{{ vm_configurations }}"
           ignore_errors: yes
 
-        - name: Set veth namespace and loopback interface UP
-          command: sudo ip netns exec "{{ item.vpc_id }}" ip link set "{{ item.veth_namespace }}" up
+        - name: Set loopback interface UP
           command: sudo ip netns exec "{{ item.vpc_id }}" ip link set lo up
           with_items: "{{ vm_configurations }}"
           ignore_errors: yes
@@ -67,5 +68,7 @@
         - name: Establish connectivity to Internet for ALL NS
           shell: |
             sudo ip netns exec "{{ item.vpc_id }}" ip route add default via {{ item.veth_subnet.split('.')[0] }}.{{ item.veth_subnet.split('.')[1] }}.{{ item.veth_subnet.split('.')[2] }}.2 dev "{{ item.vpc_id }}_tr1"
+            sudo ip netns exec "{{ item.vpc_id }}" iptables -t nat -A POSTROUTING -o "{{ item.vpc_id }}_tr1" -j MASQUERADE
+
           with_items: "{{ vm_configurations }}"
           ignore_errors: yes
