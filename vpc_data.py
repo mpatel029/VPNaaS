@@ -11,11 +11,6 @@ def main():
         except FileNotFoundError:
             print("Tenant database file not found.")
             return
-        
-        # Display available customers
-        print("Available Customers:")
-        for key in json_data.keys():
-            print("-", key)
 
         # Check for input or timeout
         print("Enter the Customer name (or 'quit' to exit): ", end='', flush=True)
