@@ -25,7 +25,7 @@ vpc_subnets = {}
 
 # Iterate through each VM configuration
 for config in parsed_yaml['vm_configurations']:
-    if 'vpc_id' in config and config['subnet'].startswith('10.0.'):
+    if 'vpc_id' in config:
         vpc_id = config['vpc_id']
         # Check if vpc_id already exists in the dictionary
         if vpc_id in vpc_subnets:
