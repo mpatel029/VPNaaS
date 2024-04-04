@@ -101,14 +101,15 @@ def get_user_input(tenant, vpc_num, num_vms, existing_subnets):
 
 def save_to_yaml(data, filename):
     with open(filename, "a") as yaml_file:
-        yaml_file.write("vm_configurations:\n")  # Add "vm_configurations:" at the top
-        for vm_config in data:
-            yaml.dump(vm_config, yaml_file, default_flow_style=False)
-            yaml_file.write("\n")
+        yaml.dump(data, yaml_file, default_flow_style=False)
+        yaml_file.write("\n")
 
 if __name__ == "__main__":
     with open("vpc_database.json") as file:
         data = yaml.safe_load(file)
+
+    with open('all_vm_configs.yaml', 'w') as file:
+        file.write("vm_configurations:\n")
 
     while True:
         all_vm_configs = []

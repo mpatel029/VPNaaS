@@ -1,14 +1,29 @@
 {
     "Arista": {
-        "Tenant ID": "1",
-        "Timestamp": "2024-04-02T19:42:10.267161"
+        "Tenant ID": "10",
+        "Timestamp": "2024-04-04T15:31:09.704441"
     },
     "Juniper": {
-        "Tenant ID": "2",
-        "Timestamp": "2024-04-02T19:42:16.445006"
+        "Tenant ID": "20",
+        "Timestamp": "2024-04-04T15:31:19.753160"
+    },
+    "Cisco": {
+        "Tenant ID": "30",
+        "Timestamp": "2024-04-04T15:31:24.858832"
+    },
+    "HPEAruba": {
+        "Tenant ID": "40",
+        "Timestamp": "2024-04-04T15:31:29.774142"
+    },
+    "PaloAlto": {
+        "Tenant ID": "50",
+        "Timestamp": "2024-04-04T15:31:40.321083"
     },
     "tenant_ids": [
-        "2",
-        "1"
+        "20",
+        "50",
+        "30",
+        "40",
+        "10"
     ]
 }
