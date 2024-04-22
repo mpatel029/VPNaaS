@@ -1,0 +1,36 @@
+---
+- name: Create and configure bridge and libvirt L2 network
+  hosts: localhost
+  become: true
+  vars_files:
+    - all_vm_configs.yaml
+
+  tasks:
+    - name: Install brctl package
+      package:
+        name: bridge-utils
+        state: present
+
+    - name: Create bridge interfaces
+      command: brctl addbr {{ item.bridge }}
+      loop: "{{ vm_configurations }}"
+      ignore_errors: yes
+
+    - name: Set bridge interfaces up
+      command: ip link set {{ item.bridge }} up
+      loop: "{{ vm_configurations }}"
+
+    - name: Creating XML for L2 bridges
+      template:
+        src: bridge_network.xml.j2
+        dest: "/etc/libvirt/qemu/networks/{{ item.bridge }}.xml"
+      loop: "{{ vm_configurations }}"
+      delegate_to: localhost
+
+    - name: Define libvirt L2 network
+      shell: "virsh net-define /etc/libvirt/qemu/networks/{{ item.bridge }}.xml"
+      loop: "{{ vm_configurations }}"
+
+    - name: Start and autostart libvirt networks
+      shell: "virsh net-start {{ item.bridge }} && virsh net-autostart {{ item.bridge }}"
+      loop: "{{ vm_configurations }}"

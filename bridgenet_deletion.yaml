@@ -1,0 +1,16 @@
+---
+- name: Delete bridge and libvirt L2 network
+  hosts: localhost
+  become: true
+  vars_files:
+    - all_vm_configs.yaml
+
+  tasks:
+    - name: Stop and remove libvirt networks
+      shell: "virsh net-destroy {{ item.bridge }} && virsh net-undefine {{ item.bridge }}"
+      loop: "{{ vm_configurations }}"
+
+    - name: Delete bridge interfaces
+      command: brctl delbr {{ item.bridge }}
+      loop: "{{ vm_configurations }}"
+      ignore_errors: yes

@@ -4,13 +4,13 @@ import yaml
 def generate_subnet(start_ip, offset):
     # Convert the start IP address to an IPv4Network object
     network = ipaddress.IPv4Network(start_ip)
-    
+
     # Increment the third octet with the offset
     new_ip = network.network_address + (offset * 256)
-    
+
     # Create a new subnet with the updated IP and a prefix length of /30
     subnet = ipaddress.IPv4Network((new_ip, 30))
-    
+
     return subnet
 
 # Load YAML content from file
@@ -30,25 +30,22 @@ for config in parsed_yaml['vm_configurations']:
         # Check if vpc_id already exists in the dictionary
         if vpc_id in vpc_subnets:
             # If vpc_id exists, use the existing veth_subnet
-            config['veth_subnet'] = vpc_subnets[vpc_id]
+            config['psubnet'] = vpc_subnets[vpc_id]
         else:
             # Generate subnet for veth_subnet and update dictionary
-            veth_subnet = generate_subnet('100.64.0.0/30', len(vpc_subnets))
-            config['veth_subnet'] = str(veth_subnet)
-            vpc_subnets[vpc_id] = str(veth_subnet)
-    
+            veth_provider = generate_subnet('100.10.0.0/30', len(vpc_subnets))
+            config['psubnet'] = str(veth_provider)
+            vpc_subnets[vpc_id] = str(veth_provider)
+
     vpc_id = config['vpc_id']
-    vm_name = config['vm_name']
-    # Extract first three letters of VPC name and VM name
-    vpc_prefix = vpc_id
     # Generate key name
-    key = f"{vpc_id}_{vm_name}"
+    key = f"{vpc_id}"
     # Generate formatted values
-    br_value = f"{vpc_prefix}_br"
-    ns_value = f"{vpc_prefix}_ns"
+    pr_value = f"{vpc_id}_pr"
+    vpc_value = f"{vpc_id}_vpc"
     # Update the original parsed YAML with the new values
-    config['veth_bridge'] = br_value
-    config['veth_namespace'] = ns_value
+    config['veth_provider'] = pr_value
+    config['veth_vpc'] = vpc_value
 
 # Write the updated parsed YAML content back to the same file
 with open('all_vm_configs.yaml', 'w') as file:

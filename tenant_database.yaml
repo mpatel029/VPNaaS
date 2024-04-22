@@ -1,0 +1,9 @@
+Arista:
+    Tenant-ID: '1'
+    Timestamp: '2024-04-20 12:22:04'
+Juniper:
+    Tenant-ID: '2'
+    Timestamp: '2024-04-20 12:22:10'
+tenant_ids:
+- '2'
+- '1'

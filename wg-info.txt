@@ -1,0 +1,28 @@
+VPN
+
+public key
+RJMvO+akSpqgigWBchx5hSxpwEVl22XQMKq3a0qYGRk=
+
+[Interface]
+PrivateKey = 4HInkjqGhsTS6lKRE/UspcDQR505gRNRkkrpu6L6FG8=
+Address = 10.100.1.1/24
+PostUp = iptables -A FORWARD -i %i -o ve_vpn1-tfa1 -j ACCEPT; iptables -A FORWARD -i ve_vpn1-tfa1 -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -s 10.0.0.0/24 -j MASQUERADE
+PostDown = iptables -D FORWARD -i %i -o ve_vpn1-tfa1 -j ACCEPT; iptables -D FORWARD -i ve_vpn1-tfa1 -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -s 10.0.0.0/24 -j MASQUERADE
+ListenPort = 51820
+
+[Peer]
+PublicKey = 4ougCuLs5dXDsGwOBiCvzHTbOLltPtQ4q6vSf3pkyzs=
+AllowedIPs = 0.0.0.0/0, ::/0
+
+Client
+
+[Interface]
+Address = 10.100.1.2/32
+PrivateKey = QAEHXekAPxdscD6xHt5cSEvxdIXtjj3q99k2E6VsuUc=
+DNS = 8.8.8.8
+
+[Peer]
+PublicKey = 4ougCuLs5dXDsGwOBiCvzHTbOLltPtQ4q6vSf3pkyzs=
+Endpoint = 10.100.1.1:51820
+AllowedIPs = 0.0.0.0/0, ::/0
+

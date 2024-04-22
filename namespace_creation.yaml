@@ -72,3 +72,15 @@
 
           with_items: "{{ vm_configurations }}"
           ignore_errors: yes
+
+        - name: Connecting VPCs to Provider namespace
+          shell: |
+             sudo ip link add "{{ item.veth_vpc }}" type veth peer name "{{ item.veth_provider}}"
+             sudo ip link set "{{ item.veth_provider }}" netns Provider
+             sudo ip link set "{{ item.veth_vpc }}" netns "{{ item.vpc_id }}"
+             sudo ip netns exec "{{ item.vpc_id }}" ip addr add {{ item.psubnet.split('.')[0] }}.{{ item.psubnet.split('.')[1] }}.{{ item.psubnet.split('.')[2] }}.1/24 dev "{{ item.veth_vpc }}"
+             sudo ip netns exec Provider ip addr add {{ item.psubnet.split('.')[0] }}.{{ item.psubnet.split('.')[1] }}.{{ item.psubnet.split('.')[2] }}.2/24 dev "{{ item.veth_provider }}"
+             sudo ip netns exec Provider ip link set "{{ item.veth_provider  }}" up
+             sudo ip netns exec "{{ item.vpc_id }}" ip link set "{{ item.veth_vpc }}" up
+          with_items: "{{ vm_configurations }}"
+          ignore_errors: yes

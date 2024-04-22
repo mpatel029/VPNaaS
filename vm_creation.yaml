@@ -17,12 +17,14 @@
       args:
         chdir: /var/lib/libvirt/images/
       with_items: "{{ vm_configurations }}"
+      ignore_errors: yes
 
     - name: Resize VM disk image
       command: qemu-img resize "/var/lib/libvirt/images/{{ item.vm_name }}/{{ item.vm_name }}.qcow2" "{{ item.disk_size }}"
       args:
         chdir: /var/lib/libvirt/images/
       with_items: "{{ vm_configurations }}"
+      ignore_errors: yes
 
     - name: Create VM meta-data file
       copy:
@@ -32,6 +34,7 @@
           local-hostname: "{{ item.vm_name }}"
         dest: "/var/lib/libvirt/images/{{ item.vm_name }}/meta-data"
       with_items: "{{ vm_configurations }}"
+      ignore_errors: yes
 
     - name: Create VM user-data file
       copy:
@@ -50,16 +53,19 @@
               plain_text_passwd: "{{ item.password }}"
         dest: "/var/lib/libvirt/images/{{ item.vm_name }}/user-data"
       with_items: "{{ vm_configurations }}"
+      ignore_errors: yes
 
     - name: Create VM ISO image
       command: genisoimage -output "./{{ item.vm_name }}-cidata.iso" -volid cidata -joliet -rock meta-data user-data
       args:
         chdir: "/var/lib/libvirt/images/{{ item.vm_name }}"
       with_items: "{{ vm_configurations }}"
+      ignore_errors: yes
 
     - name: Install VM
       command: >
-        virt-install --virt-type kvm --name "{{ item.vm_name }}" --ram "{{ item.memory }}" --vcpus="{{ item.vcpus }}" --os-variant ubuntu22.04 --disk path=/var/lib/libvirt/images/"{{ item.vm_name }}/{{ item.vm_name }}".qcow2,format=qcow2 --disk path=/var/lib/libvirt/images/"{{ item.vm_name }}/{{ item.vm_name }}"-cidata.iso,device=cdrom --import --network bridge=br0 --noautoconsole
+        virt-install --virt-type kvm --name "{{ item.vm_name }}" --ram "{{ item.memory }}" --vcpus="{{ item.vcpus }}" --os-variant ubuntu22.04 --disk path=/var/lib/libvirt/images/"{{ item.vm_name }}/{{ item.vm_name }}".qcow2,format=qcow2 --disk path=/var/lib/libvirt/images/"{{ item.vm_name }}/{{ item.vm_name }}"-cidata.iso,device=cdrom --import --network network="{{ item.bridge }}" --noautoconsole
       register: virt_install_output
       become: yes
       with_items: "{{ vm_configurations }}"
+      ignore_errors: yes
