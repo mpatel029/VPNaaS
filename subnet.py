@@ -156,6 +156,8 @@ def save_to_yaml(data, filename):
 if __name__ == "__main__":
     with open("vpc_database.yaml") as file:
         data = yaml.safe_load(file)
+    with open('all_vm_configs.yaml', 'w') as file:
+        file.write("vm_configurations:\n")
 
     while True:
         all_vm_configs = []
